@@ -1,0 +1,131 @@
+﻿@page "/Articulo/ArticuloUpdate/{id:int}"
+
+<RadzenNotification />
+
+@if (_Articulo == null)
+{
+	<div class="d-flex justify-content-center">
+		<RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+			<Template>Wait</Template>
+		</RadzenProgressBarCircular>
+	</div>
+}
+else
+{
+	<EditForm Model="@_Articulo" OnValidSubmit="@Update">
+        <DataAnnotationsValidator />
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label>Codigo</label>
+                    <RadzenTextBox @bind-Value="@_Articulo.Codigo" class="w-100" />
+                    <ValidationMessage For="@(() => _Articulo.Codigo)" />
+                </div>            
+			
+				<div class="form-group">
+					<label>Descripcion</label>
+					<RadzenTextArea @bind-Value="@_Articulo.Descripcion" class="w-100" />
+					<ValidationMessage For="@(() => _Articulo.Descripcion)" />
+				</div>
+				<div class="form-group">
+					<label>Costo</label>
+					<RadzenNumeric @bind-Value="@_Articulo.Costo" Format="\$0.00" class="w-100" />
+					<ValidationMessage For="@(() => _Articulo.Costo)" />
+				</div>
+				<div class="form-group">
+					<label>Porcentaje</label>
+					<RadzenNumeric @bind-Value="@_Articulo.Porcentaje" class="w-100" />
+					<ValidationMessage For="@(() => _Articulo.Porcentaje)" />
+				</div>
+				<div class="form-group">
+					<label>Precio sugerido</label>
+					<RadzenNumeric @bind-Value="@_Articulo.PrecioSugerido" Format="\$0.00" class="w-100" />
+					<ValidationMessage For="@(() => _Articulo.PrecioSugerido)" />
+				</div>
+				<div class="form-group">
+					<label>Cantidad</label>
+					<RadzenNumeric @bind-Value="@_Articulo.Cantidad" class="w-100" />
+					<ValidationMessage For="@(() => _Articulo.Cantidad)" />
+				</div>
+				<div class="form-group">
+					<label>Estado</label>
+					<RadzenSwitch @bind-Value="_Articulo.Estado" />
+					<ValidationMessage For="@(() => _Articulo.Estado)" />
+				</div>
+			</div>
+		</div>
+
+		<br />
+
+		<div class="col-md-12">
+			<center>
+				<button type="submit" class="btn btn-info">
+					<span class="oi oi-pencil" aria-hidden="true">Actualizar</span>
+				</button>
+			</center>
+		</div>
+	</EditForm>
+}
+
+@code {
+	[Parameter]
+	public int Id { get; set; }
+	Articulo _Articulo = new();
+	List<Articulo> _lstArticulos = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		await GetArticulo();
+	}
+
+	private async Task GetArticulo()
+	{
+		var articulo = await _http.GetFromJsonAsync<Articulo>($"/Api/Articulos/GetArticulo/{Id}");
+
+		if (articulo != null)
+		{
+			_Articulo = articulo;
+		}
+	}
+
+	private async Task Update()
+	{
+		var confirmar = await DialogService.Confirm("¿Esta seguro de actualizar esta información?", "Confirmar");
+
+		if (confirmar == true)
+		{
+			_Articulo.PrecioSugerido = _Articulo.Costo + (_Articulo.Costo * (decimal)(_Articulo.Porcentaje / 100));
+
+			var json = JsonConvert.SerializeObject(_Articulo);
+			var stringContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+			var httpResponse = await _http.PutAsync($"/Api/Articulos/UpdateArticulo/{Id}", stringContent);
+
+			if (httpResponse.IsSuccessStatusCode)
+			{
+				ShowNotification(new NotificationMessage
+					{
+						Severity = NotificationSeverity.Success,
+						Summary = "Actualizar Articulo",
+						Detail = "Articulo actualizado exitosamente.",
+						Duration = 5000
+					});
+				DialogService.Close(true);
+			}
+			else
+			{
+				ShowNotification(new NotificationMessage
+					{
+						Severity = NotificationSeverity.Warning,
+						Summary = "Actualizar Articulo",
+						Detail = "Articulo no actualizado exitosamente.",
+						Duration = 5000
+					});
+			}
+		}
+	}
+
+	void ShowNotification(NotificationMessage message)
+	{
+		NotificationService.Notify(message);
+	}
+}

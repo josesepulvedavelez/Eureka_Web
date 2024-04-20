@@ -1,0 +1,121 @@
+﻿@page "/Factura/FacturaInforme"
+@using System.Net;
+
+<h3 style="text-align: center;">Facturas informe</h3>
+
+<RadzenDialog />
+<RadzenNotification />
+
+<div class="container">
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label>Fecha</label>
+                <RadzenDatePicker @bind-Value="fechaInicial" class="w-100" />
+            </div>            
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label>Fecha</label>
+                <RadzenDatePicker @bind-Value="fechaFinal" class="w-100" />
+            </div>
+        </div>
+    </div>
+    
+    <br />
+
+    <div class="col-md-12">
+        <center>            
+            <button class="btn btn-primary" @onclick="GetFacturas">Filtrar</button>            
+        </center>
+    </div>
+
+    <br />
+
+    <div class="row">
+        <div class="col-sm-12 text-left">
+            <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" PageSize="10" AllowPaging="true" FilterMode="FilterMode.Advanced" AllowSorting="true"
+                            Data="_lstFacturaDto" TItem="FacturaDto" ColumnWidth="150px"
+                            LogicalFilterOperator="LogicalFilterOperator.Or" EmptyText="No se encontraron registros.">
+                <Columns>
+                    <RadzenDataGridColumn TItem="FacturaDto" Property="No" Title="No" />
+                    <RadzenDataGridColumn TItem="FacturaDto" Property="Fecha" Title="Fecha">
+                        <Template Context="facturadto">
+                            @string.Format("{0:dd/MM/yyyy}", facturadto.Fecha)
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="FacturaDto" Property="Total" Title="Total">
+                        <Template Context="facturadto">
+                            $@string.Format("{0:N2}", facturadto.Total)
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="FacturaDto" Property="Nombre_RazonSocial" Title="Nombre_RazonSocial" />
+                    <RadzenDataGridColumn TItem="FacturaDto" Property="Direccion" Title="Direccion" />
+                    <RadzenDataGridColumn TItem="FacturaDto" Property="Telefono" Title="Telefono" />
+
+                    <RadzenDataGridColumn TItem="FacturaDto" Property="FacturaId" Title="Acciones">
+                        <Template Context="data">
+                            <button type="button" @onclick="(()=>View(data.FacturaId))" class="btn btn-secondary">
+                                <span class="oi oi-eye" aria-hidden="true"></span>
+                            </button>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    List<FacturaDto> _lstFacturaDto;
+    DateTime fechaInicial;
+    DateTime fechaFinal;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    public async Task GetFacturas()
+    {   
+        string fechaInicialString = fechaInicial.ToString("yyyy-MM-dd");
+        string fechaFinalString = fechaFinal.ToString("yyyy-MM-dd");
+
+        if (fechaInicial.ToString() != string.Empty && fechaFinal.ToString() != string.Empty)
+        {
+            var response = await _http.GetFromJsonAsync<List<FacturaDto>>($"Api/Facturas/GetFacturas/{fechaInicialString}/{fechaFinalString}");
+
+            if (response != null)
+            {
+                _lstFacturaDto = response;
+            }
+        }       
+        else
+        {
+            ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Factura informe",
+                    Detail = "Debe seleccionar fecha inicial y fecha final correctamente",
+                    Duration = 5000
+                });
+        }
+        
+        StateHasChanged();                  
+    }
+
+    void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+
+    private async Task View(int id)
+    {
+        Navegacion.VolverFacturaIndex = false;
+        Navegacion.VolverFacturasInforme = true;
+
+        NavigationManager.NavigateTo($"/Factura/FacturaView/{id}");
+    }
+}

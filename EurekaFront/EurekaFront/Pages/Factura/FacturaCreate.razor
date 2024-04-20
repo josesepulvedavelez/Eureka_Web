@@ -1,0 +1,348 @@
+﻿@page "/Factura/FacturaCreate"
+
+<RadzenNotification />
+
+@if (_FacturaDto == null)
+{
+    <div class="d-flex justify-content-center">
+        <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+            <Template>Wait</Template>
+        </RadzenProgressBarCircular>
+    </div>
+}
+else
+{
+    <EditForm Model="@_FacturaDto">
+        <DataAnnotationsValidator />               
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Nombre / Razon social</label>
+                        <RadzenDropDown TValue="int" Data="_lstClientes"
+                            TextProperty="Nombre_RazonSocial" ValueProperty="ClienteId"
+                            AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                            @bind-Value = "@_SelectedClienteId" Change="(() => OnClienteSelectionChange(_SelectedClienteId))" class="w-100" />
+                            <ValidationMessage For="@(() => _FacturaDto.Nombre_RazonSocial)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Cc / Nit</label>
+                        <RadzenTextBox @bind-Value="@_FacturaDto.Cc_Nit" Disabled="true" class="w-100" />
+                        <ValidationMessage For="@(() => _FacturaDto.Cc_Nit)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Telefono</label>
+                        <RadzenTextBox @bind-Value="@_FacturaDto.Telefono" Disabled="true"  class="w-100" />
+                        <ValidationMessage For="@(() => _FacturaDto.Telefono)" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label>Factura No</label>
+                        <RadzenTextBox @bind-Value="@_FacturaDto.No" class="w-100" />
+                        <ValidationMessage For="@(() => _FacturaDto.No)" />
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <RadzenDatePicker @bind-Value="_FacturaDto.Fecha" Format="yyyy/MM/dd" class="w-100" />
+                        <ValidationMessage For="@(() => _FacturaDto.Fecha)" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Direccion</label>
+                        <RadzenTextArea @bind-Value="@_FacturaDto.Direccion" Disabled="true" class="w-100" />
+                        <ValidationMessage For="@(() => _FacturaDto.Direccion)" />
+                    </div>
+                </div>
+            </div>
+                
+             <hr />
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Articulo</label>
+                        <RadzenDropDown TValue="int" Data="_lstArticulos"
+                                        TextProperty="Descripcion" ValueProperty="ArticuloId"
+                                        AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        @bind-Value="@_SelectedArticuloId" Change="(() => OnArticuloSelectionChange(_SelectedArticuloId))" class="w-100" />
+                                        <ValidationMessage For="@(() => _Articulo.ArticuloId)" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>Precio sugerido</label>
+                        <RadzenNumeric @bind-Value="@_Articulo.PrecioSugerido" Disabled="true" Format="\$0.00" class="w-100" />
+                        <ValidationMessage For="@(() => _Articulo.PrecioSugerido)" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>Cantidad Stock</label>
+                        <RadzenNumeric @bind-Value="@_Articulo.Cantidad" Disabled="true" class="w-100" />
+                        <ValidationMessage For="@(() => _Articulo.Cantidad)" />
+                    </div>
+                </div>
+                    <div class="col-md-2">
+                    <div class="form-group">
+                        <label>Cantidad</label>
+                        <RadzenNumeric @bind-Value="@_Cantidad" class="w-100" />                       
+                    </div>
+                </div>                
+                <div class="col-md-2">
+                    <button type="button" @onclick="(()=> AddListFacturaDetalle())" class="btn btn-success">
+                        <span class="oi oi-plus" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+            
+            <br />
+
+            <div class="row">
+                <div class="col-sm-12 text-left">
+                    <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" PageSize="10" AllowPaging="true" FilterMode="FilterMode.Advanced" AllowSorting="true"
+                                Data="_BackupFacturaDetalleDto" TItem="FacturaDetalleDto" ColumnWidth="150px"
+                                    LogicalFilterOperator="LogicalFilterOperator.Or" EmptyText="No se encontraron registros.">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Codigo" Title="Codigo" />
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Descripcion" Title="Descripcion" />
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Precio" Title="Precio">
+                                <Template Context="facturadetalledto">
+                                    $@string.Format("{0:N2}", facturadetalledto.Precio)
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Cantidad" Title="Cantidad" />
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="SubTotal" Title="SubTotal">
+                                <Template Context="facturadetalledto">
+                                    $@string.Format("{0:N2}", facturadetalledto.SubTotal)
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+
+                    <br />
+
+                    <div class="col-md-12">
+                        <div class="text-md-end">
+                        <h3 style="color: green;">Total: $@string.Format("{0:N2}", _lstFacturaDetalleDto?.Sum(d => d.SubTotal) ?? 0)</h3>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <br />
+
+            <div class="col-md-12">
+                <center>
+                    <button type="submit" class="btn btn-success" @onclick="AddFactura">
+                        <span class="oi oi-plus" aria-hidden="true">Crear</span>
+                    </button>
+                </center>
+            </div>
+
+            <div class="col-md-12">
+                <center>
+                    <button type="submit" class="btn btn-info" @onclick="Volver">
+                        <span class="oi oi-eye" aria-hidden="true">Volver</span>
+                    </button>
+                </center>
+            </div>
+    </EditForm>
+}
+
+@code {
+    Cliente _Cliente = new();
+    List<Cliente> _lstClientes = new();
+    FacturaDto _FacturaDto = new();
+    List<FacturaDetalleDto> _lstFacturaDetalleDto = new();
+    Articulo _Articulo = new();
+    List<Articulo> _lstArticulos = new();
+
+    private int _SelectedClienteId;
+    private int _SelectedArticuloId;
+    private int _Cantidad;
+    private List<FacturaDetalleDto> _BackupFacturaDetalleDto = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _FacturaDto.Fecha = DateTime.Now.Date;
+
+        await GetClientes();
+        await GetArticulos();
+    }
+
+    public async Task GetClientes()
+    {
+        var response = await _http.GetFromJsonAsync<List<Cliente>>("Api/Clientes/GetClientes");
+
+        if (response != null)
+        {
+            _lstClientes = response;
+        }
+
+        StateHasChanged();
+    }
+
+    public async Task GetArticulos()
+    {
+        var response = await _http.GetFromJsonAsync<List<Articulo>>("Api/Articulos/GetArticulos");
+
+        if (response != null)
+        {
+            _lstArticulos = response;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnClienteSelectionChange(int clienteId)
+    {
+        var cliente = _lstClientes.FirstOrDefault(x => x.ClienteId == clienteId);
+
+        if (cliente != null)
+        {
+            _FacturaDto.Cc_Nit = cliente.Cc_Nit;
+            _FacturaDto.Direccion = cliente.Direccion;
+            _FacturaDto.Telefono = cliente.Telefono;
+            _FacturaDto.ClienteId = cliente.ClienteId;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnArticuloSelectionChange(int ArticuloId)
+    {
+        var articulo = _lstArticulos.FirstOrDefault(x => x.ArticuloId == ArticuloId);
+
+        if (articulo != null)
+        {
+            _Articulo.Codigo = articulo.Codigo;
+            _Articulo.Descripcion = articulo.Descripcion;
+            _Articulo.Costo = articulo.Costo;
+            _Articulo.Porcentaje = articulo.Porcentaje;
+            _Articulo.PrecioSugerido = articulo.PrecioSugerido;
+            _Articulo.Cantidad = articulo.Cantidad;
+            _Articulo.Estado = articulo.Estado;
+            _Articulo.ArticuloId = articulo.ArticuloId;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<List<FacturaDetalleDto>> AddListFacturaDetalle()
+    {
+        var articulo = _lstArticulos.FirstOrDefault(x => x.ArticuloId == _SelectedArticuloId);
+
+        if (articulo == null)
+        {
+            ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Crear Factura",
+                    Detail = "No ha seleccionado ningun articulo.",
+                    Duration = 5000
+                });
+        }
+        else if (_lstFacturaDetalleDto.Any(x => x.ArticuloId == articulo.ArticuloId))
+        {
+            ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Crear Factura",
+                    Detail = "El articulo ya existe en la lista.",
+                    Duration = 5000
+                });
+        }
+        else if (_Cantidad <= 0)
+        {
+            ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Crear Factura",
+                    Detail = "La cantidad debe ser mayor que Cero (0).",
+                    Duration = 5000
+                });
+        }
+        else if (_Cantidad > articulo.Cantidad)
+        {
+            ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Crear Factura",
+                    Detail = "La cantidad para agregar a la lista no debe ser mayor que la que existe en Stock.",
+                    Duration = 5000
+                });
+        }
+        else
+        {
+            _lstFacturaDetalleDto.Add(
+            new FacturaDetalleDto
+                {
+                    Codigo = articulo.Codigo,
+                    Descripcion = articulo.Descripcion,
+                    ArticuloId = articulo.ArticuloId,
+                    Precio = articulo.PrecioSugerido,
+                    Cantidad = _Cantidad,
+                    SubTotal = articulo.PrecioSugerido * _Cantidad
+                });
+
+            _BackupFacturaDetalleDto = new List<FacturaDetalleDto>(_lstFacturaDetalleDto);
+        }
+
+        return _lstFacturaDetalleDto;
+    }
+
+    private async Task AddFactura()
+    {
+        if (_lstFacturaDetalleDto == null || !_lstFacturaDetalleDto.Any())
+        {
+            ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Crear Factura",
+                    Detail = "La lista de Articulos de factura está vacía.",
+                    Duration = 5000
+                });
+
+            return;
+        }
+
+        _FacturaDto.ClienteId = _SelectedClienteId;
+        _FacturaDto.lstFacturaDetalleDto = _lstFacturaDetalleDto;
+
+        var json = JsonConvert.SerializeObject(_FacturaDto);
+        var stringContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+        var httpResponse = await _http.PostAsync("/Api/Facturas/AddFactura", stringContent);
+
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Crear Factura",
+                Detail = "Factura guardada exitosamente.",
+                Duration = 5000
+            });
+            await Volver();
+        }
+        else
+        {
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Crear Factura",
+                Detail = "Factura no guardada exitosamente.",
+                Duration = 5000
+            });
+        }
+    }
+    
+    void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+
+    private async Task Volver()
+    {
+        NavigationManager.NavigateTo("/Factura/FacturaIndex");
+    }
+}

@@ -1,0 +1,118 @@
+﻿@page "/Cliente/ClienteUpdate/{id:int}"
+
+<RadzenNotification />
+
+@if (_Cliente == null)
+{
+	<div class="d-flex justify-content-center">
+		<RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+			<Template>Wait</Template>
+		</RadzenProgressBarCircular>
+	</div>
+}
+else
+{
+	<EditForm Model="@_Cliente" OnValidSubmit="@Update">
+		<DataAnnotationsValidator />
+		<div class="row">
+			<div class="col-md-12">
+				<div class="form-group">
+					<label>Cc / Nit</label>
+					<RadzenTextBox @bind-Value="@_Cliente.Cc_Nit" class="w-100" />
+					<ValidationMessage For="@(() => _Cliente.Cc_Nit)" />
+				</div>
+				<div class="form-group">
+					<label>Apellidos</label>
+					<RadzenTextBox @bind-Value="@_Cliente.Nombre_RazonSocial" class="w-100" />
+					<ValidationMessage For="@(() => _Cliente.Nombre_RazonSocial)" />
+				</div>
+				<div class="form-group">
+					<label>Direccion</label>
+					<RadzenTextArea @bind-Value="@_Cliente.Direccion" class="w-100" />
+					<ValidationMessage For="@(() => _Cliente.Direccion)" />
+				</div>
+				<div class="form-group">
+					<label>Telefono</label>
+					<RadzenTextBox @bind-Value="@_Cliente.Telefono" class="w-100" />
+					<ValidationMessage For="@(() => _Cliente.Telefono)" />
+				</div>
+				<div class="form-group">
+					<label>Estado</label>
+					<RadzenSwitch @bind-Value="_Cliente.Estado" />
+					<ValidationMessage For="@(() => _Cliente.Estado)" />
+				</div>
+			</div>
+		</div>
+
+		<br />
+
+		<div class="col-md-12">
+			<center>
+				<button type="submit" class="btn btn-info">
+					<span class="oi oi-pencil" aria-hidden="true">Actualizar</span>
+				</button>
+			</center>
+		</div>
+	</EditForm>
+}
+
+@code {
+	[Parameter]
+	public int Id { get; set; }
+	Cliente _Cliente = new();
+	List<Cliente> _lstClientes = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		await GetArticulo();
+	}
+
+	private async Task GetArticulo()
+	{
+		var cliente = await _http.GetFromJsonAsync<Cliente>($"/Api/Clientes/GetCliente/{Id}");
+
+		if (cliente != null)
+		{
+			_Cliente = cliente;
+		}
+	}
+
+	private async Task Update()
+	{
+		var confirmar = await DialogService.Confirm("¿Esta seguro de actualizar esta información?", "Confirmar");
+
+		if (confirmar == true)
+		{
+			var json = JsonConvert.SerializeObject(_Cliente);
+			var stringContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+			var httpResponse = await _http.PutAsync($"/Api/Clientes/UpdateCliente/{Id}", stringContent);
+
+			if (httpResponse.IsSuccessStatusCode)
+			{
+				ShowNotification(new NotificationMessage
+					{
+						Severity = NotificationSeverity.Success,
+						Summary = "Actualizar Cliente",
+						Detail = "Cliente actualizado exitosamente.",
+						Duration = 5000
+					});
+				DialogService.Close(true);
+			}
+			else
+			{
+				ShowNotification(new NotificationMessage
+					{
+						Severity = NotificationSeverity.Warning,
+						Summary = "Actualizar Cliente",
+						Detail = "Cliente no actualizado exitosamente.",
+						Duration = 5000
+					});
+			}
+		}		
+	}
+
+	void ShowNotification(NotificationMessage message)
+	{
+		NotificationService.Notify(message);
+	}
+}

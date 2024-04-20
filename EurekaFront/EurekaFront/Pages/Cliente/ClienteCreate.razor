@@ -1,0 +1,106 @@
+﻿@page "/Cliente/ClienteCreate"
+
+<RadzenNotification />
+
+@if (_Cliente == null)
+{
+    <div class="d-flex justify-content-center">
+        <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+            <Template>Wait</Template>
+        </RadzenProgressBarCircular>
+    </div>
+}
+else
+{
+    <EditForm Model="@_Cliente" OnValidSubmit="@AddCliente">
+        <DataAnnotationsValidator />
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label>Cc / Nit</label>
+                    <RadzenTextBox @bind-Value="@_Cliente.Cc_Nit" class="w-100" />
+                    <ValidationMessage For="@(() => _Cliente.Cc_Nit)" />
+                </div>
+                <div class="form-group">
+                    <label>Nombres</label>
+                    <RadzenTextBox @bind-Value="@_Cliente.Nombre_RazonSocial" class="w-100" />
+                    <ValidationMessage For="@(() => _Cliente.Nombre_RazonSocial)" />
+                </div>                
+                <div class="form-group">
+                    <label>Direccion</label>
+                    <RadzenTextArea @bind-Value="@_Cliente.Direccion" class="w-100" />
+                    <ValidationMessage For="@(() => _Cliente.Direccion)" />
+                </div>
+                <div class="form-group">
+                    <label>Telefono</label>
+                    <RadzenTextBox @bind-Value="@_Cliente.Telefono" class="w-100" />
+                    <ValidationMessage For="@(() => _Cliente.Telefono)" />
+                </div>
+                <div class="form-group">
+                    <label>Estado</label>
+                    <RadzenSwitch @bind-Value="_Cliente.Estado" />
+                    <ValidationMessage For="@(() => _Cliente.Estado)" />
+                </div>
+            </div>
+        </div>
+
+        <br />
+
+        <div class="col-md-12">
+            <center>
+                <button type="submit" class="btn btn-info">
+                    <span class="oi oi-pencil" aria-hidden="true">Crear</span>
+                </button>
+            </center>
+        </div>
+    </EditForm>
+}
+
+@code {
+    Cliente _Cliente = new();
+    List<Cliente> _lstCliente = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _Cliente.Estado = true;
+    }
+
+    private async Task AddCliente()
+    {
+        var confirmar = await DialogService.Confirm("¿Esta seguro de guardar esta información?", "Confirmar");
+
+        if (confirmar == true)
+        {
+            var json = JsonConvert.SerializeObject(_Cliente);
+            var stringContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+            var httpResponse = await _http.PostAsync("/Api/Clientes/AddCliente", stringContent);
+
+            if (httpResponse.IsSuccessStatusCode)
+            {
+                ShowNotification(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Crear Cliente",
+                        Detail = "Cliente guardado exitosamente.",
+                        Duration = 5000
+                    });
+                DialogService.Close(true);
+            }
+            else
+            {
+                ShowNotification(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = "Crear Cliente",
+                        Detail = "Cliente no guardado exitosamente.",
+                        Duration = 5000
+                    });
+            }
+        }        
+    }
+
+    void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+}

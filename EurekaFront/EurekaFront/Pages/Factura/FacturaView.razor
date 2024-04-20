@@ -1,0 +1,155 @@
+﻿@page "/Factura/FacturaView/{id:int}"
+
+<RadzenNotification />
+
+@if (_FacturaDto == null)
+{
+    <div class="d-flex justify-content-center">
+        <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+            <Template>Wait</Template>
+        </RadzenProgressBarCircular>
+    </div>
+}
+else
+{
+	<EditForm Model="@_FacturaDto">
+		<DataAnnotationsValidator />
+
+        <RadzenFieldset AllowCollapse="true">
+            <HeaderTemplate>
+                <span class="d-inline-flex align-items-center align-middle">
+                    <RadzenIcon Icon="account_box" class="me-1" /><b>Factura: @_FacturaDto.No</b>
+                </span>
+            </HeaderTemplate>
+            <ChildContent>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Nombre / Razon social</label>
+                            <RadzenTextBox @bind-Value="@_FacturaDto.Nombre_RazonSocial" class="w-100" />
+                            <ValidationMessage For="@(() => _FacturaDto.Nombre_RazonSocial)" />
+                        </div>
+                        <div class="form-group">
+                            <label>Cc / Nit</label>
+                            <RadzenTextBox @bind-Value="@_FacturaDto.Cc_Nit" class="w-100" />
+                            <ValidationMessage For="@(() => _FacturaDto.Cc_Nit)" />
+                        </div>
+                        <div class="form-group">
+                            <label>Telefono</label>
+                            <RadzenTextBox @bind-Value="@_FacturaDto.Telefono" class="w-100" />
+                            <ValidationMessage For="@(() => _FacturaDto.Telefono)" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Factura No</label>
+                            <RadzenTextBox @bind-Value="@_FacturaDto.No" class="w-100" />
+                            <ValidationMessage For="@(() => _FacturaDto.No)" />
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <RadzenDatePicker @bind-Value="_FacturaDto.Fecha" Format="yyyy/MM/dd" class="w-100" />
+                            <ValidationMessage For="@(() => _FacturaDto.Fecha)" />
+                        </div>                        
+                        <div class="form-group">
+                            <label>Direccion</label>
+                            <RadzenTextArea @bind-Value="@_FacturaDto.Direccion" class="w-100" />
+                            <ValidationMessage For="@(() => _FacturaDto.Direccion)" />
+                        </div>                        
+                    </div>
+                </div>
+
+                <br />
+
+                <div class="row">
+                    <div class="col-sm-12 text-left">
+                    <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" PageSize="10" AllowPaging="true" FilterMode="FilterMode.Advanced" AllowSorting="true"
+                                    Data="_lstFacturaDetalleDto" TItem="FacturaDetalleDto" ColumnWidth="150px"
+                                    LogicalFilterOperator="LogicalFilterOperator.Or" EmptyText="No se encontraron registros.">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Codigo" Title="Codigo" />
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Descripcion" Title="Descripcion" />
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Precio" Title="Precio">
+                                <Template Context="facturadetalledto">
+                                    $@string.Format("{0:N2}", facturadetalledto.Precio)
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="Cantidad" Title="Cantidad" />
+                            <RadzenDataGridColumn TItem="FacturaDetalleDto" Property="SubTotal" Title="SubTotal">
+                                <Template Context="facturadetalledto">
+                                    $@string.Format("{0:N2}", facturadetalledto.SubTotal)
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                        
+                    <br />
+
+                    <div class="col-md-12">
+                        <div class="text-md-end">
+                            <h3 style="color: green;">Total: $@string.Format("{0:N2}", _lstFacturaDetalleDto?.Sum(d => d.SubTotal) ?? 0)</h3>
+                        </div>
+                    </div>
+
+                    </div>
+                </div>
+            </ChildContent>           
+        </RadzenFieldset>
+
+		<br />
+
+		<div class="col-md-12">
+			<center>
+				<button type="submit" class="btn btn-info" @onclick="Volver">
+					<span class="oi oi-eye" aria-hidden="true">Volver</span>
+				</button>
+			</center>
+		</div>
+	</EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    FacturaDto _FacturaDto = new();
+    List<FacturaDetalleDto> _lstFacturaDetalleDto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetFactura();
+        await GetFacturaDetalle();
+    }
+
+    private async Task GetFactura()
+    {
+        var facturaDto = await _http.GetFromJsonAsync<FacturaDto>($"/Api/Facturas/GetFactura/{Id}");
+
+        if (facturaDto != null)
+        {
+            _FacturaDto = facturaDto;
+        }
+    }
+
+    private async Task GetFacturaDetalle()
+    {
+        var facturaDetalles = await _http.GetFromJsonAsync<List<FacturaDetalleDto>>($"/Api/Facturas/GetFacturaDetalle/{Id}");
+
+        if (facturaDetalles != null)
+        {
+            _lstFacturaDetalleDto = facturaDetalles;
+        }
+    }
+
+    private async Task Volver()
+    {
+        if (Navegacion.VolverFacturaIndex == true )
+        {
+            NavigationManager.NavigateTo("/Factura/FacturaIndex");
+        }
+        else if (Navegacion.VolverFacturasInforme == true)
+        {
+            NavigationManager.NavigateTo("/Factura/FacturaInforme");
+        }                
+    }
+
+}
